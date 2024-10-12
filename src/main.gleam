@@ -21,7 +21,15 @@ pub fn main() {
       io.println("Received message!")
       let assert glisten.Packet(req) = msg
       let response = handler.request_handler(req)
-      let assert Ok(_) = glisten.send(conn, response)
+      io.println("Sending response")
+      let res = glisten.send(conn, response)
+      case res {
+        Ok(_) -> Nil
+        Error(err) -> {
+          io.debug(err)
+          Nil
+        }
+      }
       actor.continue(state)
     })
     |> glisten.serve(9092)

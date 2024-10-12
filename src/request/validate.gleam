@@ -1,5 +1,6 @@
 pub type APIError {
   InvalidApiVersion
+  Unsuported
 }
 
 pub fn validate_api_version(version: Int) -> Result(Nil, APIError) {

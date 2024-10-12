@@ -3,9 +3,14 @@ pub type ApiKeySupport {
 }
 
 pub fn api_versions() -> List(ApiKeySupport) {
-  [ApiKeySupport(18, 4, 4)]
+  [ApiKeySupport(18, 0, 4)]
 }
 
 pub fn serialize_api_key_support(data: ApiKeySupport) -> BitArray {
-  <<data.version:size(2), data.min:size(2), data.max:size(2)>>
+  <<
+    data.version:big-size(16),
+    data.min:big-size(16),
+    data.max:big-size(16),
+    0:big-size(8),
+  >>
 }
