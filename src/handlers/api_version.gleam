@@ -3,7 +3,7 @@ pub type ApiKeySupport {
 }
 
 pub fn api_versions() -> List(ApiKeySupport) {
-  [ApiKeySupport(18, 0, 4)]
+  [ApiKeySupport(18, 0, 4), ApiKeySupport(75, 0, 0)]
 }
 
 pub fn serialize_api_key_support(data: ApiKeySupport) -> BitArray {
