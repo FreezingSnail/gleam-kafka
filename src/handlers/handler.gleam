@@ -3,6 +3,7 @@ import gleam/bytes_builder
 import gleam/io
 import gleam/list
 import handlers/api_version
+import request/errors
 import request/request.{type RequestHeader}
 import request/validate
 
@@ -25,16 +26,17 @@ fn route_api_key(
 ) -> bytes_builder.BytesBuilder {
   case header.req_api_key {
     18 -> api_version_handler(header.correlation_id)
-    _ -> error_message(header.correlation_id, validate.Unsuported)
+    75 -> describe_topic_partitions_handler(header.correlation_id)
+    _ -> error_message(header.correlation_id, errors.Unsuported)
   }
 }
 
 fn error_message(
   correlation_id: Int,
-  error: validate.APIError,
+  error: errors.APIError,
 ) -> bytes_builder.BytesBuilder {
   let err = case error {
-    validate.InvalidApiVersion -> <<35:size(16)>>
+    errors.InvalidApiVersion -> <<35:size(16)>>
     _ -> <<1:size(8)>>
   }
   bytes_builder.new()
@@ -69,6 +71,23 @@ fn api_version_handler(correlation_id: Int) -> bytes_builder.BytesBuilder {
   |> bytes_builder.append(<<array_len:size(8)>>)
   //array
   |> bytes_builder.append(body)
+  //throttle and tag buffer
+  |> bytes_builder.append(<<0:size(32), 0:size(8)>>)
+}
+
+fn describe_topic_partitions_handler(
+  correlation_id: Int,
+) -> bytes_builder.BytesBuilder {
+  let resp_len = 0
+  bytes_builder.new()
+  //size 
+  |> bytes_builder.append(<<resp_len:size(32)>>)
+  //header
+  |> bytes_builder.append(<<correlation_id:size(32)>>)
+  //err code
+  |> bytes_builder.append(<<0:size(16)>>)
+  //count
+  //array
   //throttle and tag buffer
   |> bytes_builder.append(<<0:size(32), 0:size(8)>>)
 }
