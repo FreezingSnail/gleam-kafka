@@ -1,5 +1,6 @@
 import domain/parser
 import gleam/bit_array
+import gleam/io
 import gleeunit/should
 
 pub fn test_clientid_parse_test() {
@@ -10,4 +11,11 @@ pub fn test_clientid_parse_test() {
 
   let #(parsed, _rest) = parser.parse_client_id(message)
   should.equal(parsed, client_name)
+}
+
+pub fn var_int_parse_test() {
+  let val = 0b1001011000000001
+  let #(l, _rest) = parser.parse_var_int(<<val:big-size(16)>>)
+  io.debug(l)
+  should.equal(l, 150)
 }

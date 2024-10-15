@@ -1,17 +1,18 @@
+import domain/parser
 import gleam/bit_array
 import gleam/bytes_builder
 import gleam/io
 import gleam/list
 import handlers/api_version
-import request/errors
+import request/errors.{type APIError}
 import request/request.{type RequestHeader}
 import request/validate
 
 pub fn request_handler(request: BitArray) -> bytes_builder.BytesBuilder {
   io.println("handling request")
-  let header = request.parse_request_header(request)
+  let header: request.RequestHeader = parser.parse_request_header_v2(request)
   io.debug(header)
-  case validate.validate_api_version(header.req_api_version) {
+  case validate.validate_api_version(header.api_version) {
     Ok(_) -> route_api_key(header, request)
     Error(err) -> {
       io.println("failed to validate header")
@@ -24,7 +25,7 @@ fn route_api_key(
   header: RequestHeader,
   _request: BitArray,
 ) -> bytes_builder.BytesBuilder {
-  case header.req_api_key {
+  case header.api_key {
     18 -> api_version_handler(header.correlation_id)
     75 -> describe_topic_partitions_handler(header.correlation_id)
     _ -> error_message(header.correlation_id, errors.Unsuported)
@@ -79,15 +80,39 @@ fn describe_topic_partitions_handler(
   correlation_id: Int,
 ) -> bytes_builder.BytesBuilder {
   let resp_len = 0
+  let partion = get_partition_info()
+
+  case partion {
+    Ok(_) -> {
+      bytes_builder.new()
+      //size 
+      |> bytes_builder.append(<<resp_len:size(32)>>)
+      //header
+      |> bytes_builder.append(<<correlation_id:size(32)>>)
+      //err code
+      |> bytes_builder.append(<<0:size(16)>>)
+      //count
+      //array
+      //throttle and tag buffer
+      |> bytes_builder.append(<<0:size(32), 0:size(8)>>)
+    }
+    Error(_) -> describe_topic_partitions_error(correlation_id, "")
+  }
+}
+
+fn get_partition_info() -> Result(Int, APIError) {
+  Error(errors.UnknownTopicOrPartition)
+}
+
+fn describe_topic_partitions_error(
+  correlation_id: Int,
+  topic: String,
+) -> bytes_builder.BytesBuilder {
   bytes_builder.new()
   //size 
-  |> bytes_builder.append(<<resp_len:size(32)>>)
+  |> bytes_builder.append(<<0:size(32)>>)
   //header
   |> bytes_builder.append(<<correlation_id:size(32)>>)
-  //err code
-  |> bytes_builder.append(<<0:size(16)>>)
-  //count
-  //array
-  //throttle and tag buffer
-  |> bytes_builder.append(<<0:size(32), 0:size(8)>>)
+  //throttle and buffer
+  |> bytes_builder.append(<<0:size(40)>>)
 }
